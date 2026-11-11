@@ -156,3 +156,17 @@ var REC = [
   { id:'herfstkruiden', n:'Linde en salie', mood:['warm'], ing:[['lindebloesem',2],['citroenschil',1],['salie',1],['gember',1]],
     tekst:'Kruidig en verwarmend. Lekker met een lepel honing.' }
 ];
+
+// berichtjes van Serkan, komen af en toe als melding in de app
+var BERICHTEN = [
+  'Afiyet bal şeker olsun',
+  'Smakelijkkk',
+  'Bol şanslar çayla',
+  'Ellerine sağlık',
+  'Kolay gelsin',
+  'Geniet van je thee',
+  'Niet te heet drinken he',
+  'Die wordt vast superlekker',
+  'Maak er ook eentje voor mij',
+  'Çayın tadı senin gibi güzel olsun'
+];

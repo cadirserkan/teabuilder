@@ -1,5 +1,5 @@
 // versie omhoog zetten bij elke update
-const VERSION = 'teabuilder-2';
+const VERSION = 'teabuilder-3';
 const CORE = [
   './',
   './index.html',

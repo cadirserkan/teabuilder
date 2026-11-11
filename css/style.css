@@ -314,6 +314,23 @@ body.splash .btn.primary { background: #e591ac; border-color: #e591ac; color: #2
 }
 .toast[hidden] { display: none; }
 
+/* berichtje van Serkan */
+.msg {
+  position: fixed; left: 12px; right: 12px; top: calc(10px + env(safe-area-inset-top)); z-index: 35;
+  max-width: 420px; margin: 0 auto; padding: 10px 14px 10px 10px;
+  display: flex; align-items: center; gap: 12px; text-align: left; cursor: pointer;
+  background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 18px;
+  box-shadow: var(--shadow); animation: msgin .45s cubic-bezier(.2,.9,.3,1.2) both;
+}
+.msg[hidden] { display: none; }
+.msg.out { animation: msgout .3s ease both; }
+.msg .av { width: 40px; height: 40px; border-radius: 50%; flex: none; display: grid; place-items: center; background: var(--accent); color: var(--accent-ink); font: 400 20px/1 var(--display); }
+.msg .tx { min-width: 0; display: flex; flex-direction: column; }
+.msg b { font-size: 13px; font-weight: 600; color: var(--muted); }
+.msg #msg-text { font-size: 16px; font-weight: 500; }
+@keyframes msgin { from { opacity: 0; transform: translateY(-70px); } to { opacity: 1; transform: none; } }
+@keyframes msgout { to { opacity: 0; transform: translateY(-70px); } }
+
 /* animaties */
 .view.enter > * { animation: rise .5s cubic-bezier(.2,.8,.2,1) both; }
 .view.enter > *:nth-child(2) { animation-delay: .07s; }

@@ -395,6 +395,7 @@
     else if (act === 'cat') { S.cat = id; save(); renderKast(); }
     else if (act === 'rec' || act === 'herb') { openSheet(act, id, b); }
     else if (act === 'close') { closeSheet(); }
+    else if (act === 'msg-close') { hideMsg(); }
     else if (act === 'fav') {
       k = S.favs.indexOf(id); if (k > -1) S.favs.splice(k, 1); else S.favs.push(id);
       save(); render(); if (sheetState) openSheet(sheetState.kind, sheetState.id);
@@ -444,6 +445,29 @@
   if (topLevel && 'serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
     window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () { }); });
   }
+
+  // berichtjes van Serkan: de eerste na 1 minuut, daarna om de 5 minuten, in willekeurige volgorde
+  var msgEl = document.getElementById('msg'), msgTimer = 0, msgBag = [], lastMsg = '';
+  function hideMsg() {
+    clearTimeout(msgTimer);
+    if (msgEl.hidden) return;
+    msgEl.classList.add('out');
+    setTimeout(function () { msgEl.hidden = true; msgEl.classList.remove('out'); }, 300);
+  }
+  function showMsg() {
+    if (!S.intro || document.hidden) return;
+    if (!msgBag.length) {
+      // alle berichten door elkaar schudden, pas herhalen als ze allemaal geweest zijn
+      msgBag = BERICHTEN.slice();
+      for (var i = msgBag.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)), t = msgBag[i]; msgBag[i] = msgBag[j]; msgBag[j] = t; }
+      if (msgBag.length > 1 && msgBag[msgBag.length - 1] === lastMsg) msgBag.unshift(msgBag.pop());
+    }
+    lastMsg = msgBag.pop();
+    document.getElementById('msg-text').textContent = lastMsg;
+    msgEl.classList.remove('out'); msgEl.hidden = false;
+    clearTimeout(msgTimer); msgTimer = setTimeout(hideMsg, 7000);
+  }
+  setTimeout(function () { showMsg(); setInterval(showMsg, 5 * 60 * 1000); }, 60 * 1000);
 
   S = normalize(load());
   route();
