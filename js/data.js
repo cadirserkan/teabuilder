@@ -157,6 +157,33 @@ var REC = [
     tekst:'Kruidig en verwarmend. Lekker met een lepel honing.' }
 ];
 
+// smaaktype per ingredient, zo kan een eigen kruid vergeleken worden met de rest
+var TYPES = [['bloemig', 'Bloemig'], ['zacht', 'Zacht en zoet'], ['citrus', 'Citrus'], ['fris', 'Fris zoals munt'],
+  ['kruidig', 'Kruidig'], ['warm', 'Warm en pittig'], ['fruitig', 'Fruitig en zuur']];
+var TYPE = {
+  'groene-thee': 'thee', 'witte-thee': 'thee', 'zwarte-thee': 'thee', 'rooibos': 'zacht',
+  'jasmijn': 'bloemig', 'roos': 'bloemig', 'kamille': 'zacht', 'lavendel': 'bloemig', 'hibiscus': 'fruitig',
+  'lindebloesem': 'zacht', 'oranjebloesem': 'bloemig', 'vlierbloesem': 'zacht', 'goudsbloem': 'zacht',
+  'korenbloem': 'zacht', 'vlinderbloem': 'zacht', 'chrysant': 'zacht',
+  'munt': 'fris', 'citroenmelisse': 'citrus', 'citroenverbena': 'citrus', 'salie': 'kruidig', 'citroengras': 'citrus',
+  'rozenbottel': 'fruitig', 'gember': 'warm', 'kaneel': 'warm', 'sinaasappelschil': 'citrus', 'citroenschil': 'citrus',
+  'appel': 'fruitig', 'kardemom': 'warm'
+};
+// welke smaaktypes goed samen gaan
+var TYPE_GOED = [
+  ['thee', 'bloemig'], ['thee', 'citrus'], ['thee', 'fris'],
+  ['bloemig', 'bloemig'], ['bloemig', 'zacht'], ['bloemig', 'citrus'],
+  ['zacht', 'zacht'], ['zacht', 'citrus'], ['zacht', 'fris'], ['zacht', 'fruitig'], ['zacht', 'warm'],
+  ['citrus', 'citrus'], ['citrus', 'fris'], ['citrus', 'warm'], ['citrus', 'kruidig'],
+  ['fris', 'fris'], ['fris', 'fruitig'], ['fris', 'kruidig'],
+  ['kruidig', 'warm'], ['warm', 'warm'], ['warm', 'fruitig'], ['fruitig', 'fruitig']
+];
+var TYPE_BOTST = [
+  ['kruidig', 'bloemig', 'Kruidige smaken overstemmen fijne bloemen.']
+];
+// kleuren om uit te kiezen als je geen foto hebt
+var KLEUREN = ['#c8587a', '#8d74c2', '#4467c8', '#4e8f5e', '#a5bf4e', '#e9c23c', '#ee8e2e', '#9a5a2e'];
+
 // berichtjes van Serkan, komen af en toe als melding in de app
 var BERICHTEN = [
   'Afiyet bal şeker olsun',

@@ -331,6 +331,29 @@ body.splash .btn.primary { background: #e591ac; border-color: #e591ac; color: #2
 @keyframes msgin { from { opacity: 0; transform: translateY(-70px); } to { opacity: 1; transform: none; } }
 @keyframes msgout { to { opacity: 0; transform: translateY(-70px); } }
 
+/* eigen kruid toevoegen */
+.dot.ph { width: 22px; height: 22px; }
+.tag.have { border-color: var(--good); }
+.tag.havebad { border-color: var(--bad); }
+.vh { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; }
+.form { display: flex; flex-direction: column; gap: 16px; }
+.fotorow { display: flex; align-items: center; gap: 16px; }
+.fotorow .bigdot { width: 72px; height: 72px; }
+.fotorow .group { align-items: flex-start; gap: 6px; }
+.fotorow:focus-within .btn { outline: 2px solid var(--accent); outline-offset: 2px; }
+fieldset { border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+legend, .fld > span { padding: 0; font-weight: 600; font-size: 14px; margin-bottom: 6px; }
+.fld { display: flex; flex-direction: column; min-width: 0; }
+.fld input, .fld select { min-height: 46px; padding: 8px 12px; background: var(--porcelain); border: 1px solid var(--line); border-radius: 12px; font: inherit; color: inherit; width: 100%; }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.rchip, .kleur { position: relative; display: inline-flex; cursor: pointer; }
+.rchip input, .kleur input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+.rchip span { display: inline-flex; align-items: center; min-height: 40px; padding: 8px 14px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); font-weight: 500; font-size: 15px; }
+.rchip input:checked + span { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.kleur span { width: 36px; height: 36px; border-radius: 50%; box-shadow: inset 0 0 0 1px rgba(0,0,0,.22); }
+.kleur input:checked + span { outline: 3px solid var(--ink); outline-offset: 2px; }
+.rchip input:focus-visible + span, .kleur input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
+
 /* animaties */
 .view.enter > * { animation: rise .5s cubic-bezier(.2,.8,.2,1) both; }
 .view.enter > *:nth-child(2) { animation-delay: .07s; }

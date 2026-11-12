@@ -21,6 +21,10 @@ teabuilder/
     └── icons/
 ```
 
+## Eigen kruiden
+
+In de kast kan je zelf een kruid toevoegen met een foto of kleur. De app schat op basis van het smaaktype (`TYPE`, `TYPE_GOED` en `TYPE_BOTST` in `js/data.js`) met welke andere kruiden het past. Foto's worden verkleind en samen met de rest in localStorage bewaard.
+
 ## Online zetten
 
 Repo importeren in Vercel (alles op standaard laten), of in deze map:

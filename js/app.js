@@ -17,13 +17,14 @@
       pantry: ['groene-thee', 'jasmijn', 'roos', 'kamille'],
       favs: [],
       own: [{ id: 'vb', n: 'Roos en kamille', ing: ['kamille', 'roos', 'lindebloesem'], vb: true }],
-      mood: 'alles', kan: false, cat: 'alles', intro: false, noInstall: false
+      mood: 'alles', kan: false, cat: 'alles', intro: false, noInstall: false, eigen: []
     };
   }
   function known(a) { return (Array.isArray(a) ? a : []).filter(function (id) { return !!BY[id]; }); }
   function normalize(d) {
     var x = defaults();
     if (!d || typeof d !== 'object' || !Array.isArray(d.sel)) return x;
+    x.eigen = cleanEigen(d.eigen); x.eigen.forEach(voegToe);
     x.sel = known(d.sel).slice(0, MAX);
     x.pantry = known(d.pantry);
     x.favs = (Array.isArray(d.favs) ? d.favs : []).filter(function (id) { return REC.some(function (r) { return r.id === id; }); });
@@ -35,8 +36,33 @@
     x.kan = !!d.kan; x.intro = !!d.intro; x.noInstall = !!d.noInstall;
     return x;
   }
+  // eigen kruiden uit de opslag nakijken voor ze gebruikt worden
+  function cleanText(s) { return String(s == null ? '' : s).replace(/[<>&"'`]/g, '').replace(/\s+/g, ' ').trim().slice(0, 30); }
+  function cleanEigen(list) {
+    var out = [];
+    (Array.isArray(list) ? list : []).forEach(function (o) {
+      if (!o || typeof o.id !== 'string' || !/^eigen-[a-z0-9]+$/.test(o.id) || BY[o.id] || out.length >= 30) return;
+      var n = cleanText(o.n), tijd = Array.isArray(o.tijd) ? o.tijd.map(Number) : [];
+      if (!n || !CATS.some(function (c) { return c[0] === o.c; })) return;
+      out.push({
+        id: o.id, n: n, c: o.c,
+        p: TYPES.some(function (t) { return t[0] === o.p; }) ? o.p : 'zacht',
+        sterkte: [1, 2, 3].indexOf(o.sterkte) > -1 ? o.sterkte : 2,
+        temp: [80, 90, 95, 100].indexOf(o.temp) > -1 ? o.temp : 95,
+        tijd: tijd.length === 2 && tijd[0] > 0 && tijd[1] >= tijd[0] && tijd[1] <= 15 ? tijd : [5, 7],
+        caf: !!o.caf,
+        foto: typeof o.foto === 'string' && /^data:image\/(jpeg|png);base64,[A-Za-z0-9+\/=]+$/.test(o.foto) && o.foto.length < 40000 ? o.foto : '',
+        blad: /^#[0-9a-f]{6}$/i.test(o.blad) ? o.blad : '#4e8f5e'
+      });
+    });
+    return out;
+  }
   function load() { try { var r = localStorage.getItem(KEY); return r ? JSON.parse(r) : null; } catch (e) { return null; } }
-  function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { } }
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); return true; } catch (e) { return false; } }
+  // bolletje met kleur of foto van een ingredient
+  function dot(i, cls) {
+    return '<span class="' + (cls || 'dot') + (i.foto ? ' ph' : '') + '" style="background:' + (i.foto ? 'url(' + i.foto + ') center/cover' : i.blad) + '"></span>';
+  }
 
   function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function icon(level) { return level === 'good' ? '✓' : level === 'bad' ? '✕' : level === 'warn' ? '!' : '·'; }
@@ -88,7 +114,7 @@
       h += '<div class="group"><h3>' + c[1] + '</h3><div class="chips">';
       ING.filter(function (i) { return i.c === c[0]; }).forEach(function (i) {
         h += '<button class="chip" data-act="' + act + '" data-id="' + i.id + '" aria-pressed="' + (isOn(i.id) ? 'true' : 'false') + '">' +
-          '<span class="dot" style="background:' + i.blad + '"></span><span>' + i.n + '</span>' + (withFit ? '<span class="mark" aria-hidden="true"></span>' : '') + '</button>';
+          dot(i) + '<span>' + i.n + '</span>' + (withFit ? '<span class="mark" aria-hidden="true"></span>' : '') + '</button>';
       });
       h += '</div></div>';
     });
@@ -231,7 +257,10 @@
       h += '<section class="panel"><h2>Hoe past dit samen?</h2><div class="lines">';
       j.clash.forEach(function (c) { h += '<p class="line bad"><span class="ic" aria-hidden="true">✕</span><span><b>' + pairText(c) + '.</b> ' + c[2] + '</span></p>'; });
       j.warn.forEach(function (w) { h += '<p class="line warn"><span class="ic" aria-hidden="true">!</span><span>' + w + '</span></p>'; });
-      if (j.good.length) h += '<p class="line good"><span class="ic" aria-hidden="true">✓</span><span><b>Beproefd:</b> ' + j.good.map(pairText).join(' · ') + '</span></p>';
+      var eigenPaar = function (p) { return BY[p[0]].eigen || BY[p[1]].eigen; };
+      var vast = j.good.filter(function (p) { return !eigenPaar(p); }), schat = j.good.filter(eigenPaar);
+      if (vast.length) h += '<p class="line good"><span class="ic" aria-hidden="true">✓</span><span><b>Beproefd:</b> ' + vast.map(pairText).join(' · ') + '</span></p>';
+      if (schat.length) h += '<p class="line good"><span class="ic" aria-hidden="true">✓</span><span><b>Past volgens smaaktype:</b> ' + schat.map(pairText).join(' · ') + '</span></p>';
       if (j.unknown.length) h += '<p class="line plain"><span class="ic" aria-hidden="true">·</span><span><b>Zelf uitproberen:</b> ' + j.unknown.map(pairText).join(' · ') + '</span></p>';
       h += '</div></section>';
     }
@@ -284,12 +313,13 @@
     var can = canMake().length;
     var h = '<h1 class="title">Mijn kruidenkast</h1>' +
       '<p class="lead" id="kast-count">' + kastCount(can) + '</p>' +
+      '<div class="actions"><button class="btn" data-act="nieuw">+ Eigen ingrediënt toevoegen</button></div>' +
       '<div class="chips">' + [['alles', 'Alles']].concat(CATS).map(function (c) {
         return '<button class="chip filter" data-act="cat" data-id="' + c[0] + '" aria-pressed="' + (S.cat === c[0]) + '">' + c[1] + '</button>';
       }).join('') + '</div><div class="rows">';
     ING.filter(function (i) { return S.cat === 'alles' || i.c === S.cat; }).forEach(function (i) {
-      h += '<div class="row"><button class="rowmain" data-act="herb" data-id="' + i.id + '"><span class="dot" style="background:' + i.blad + '"></span>' +
-        '<span><b>' + i.n + '</b><small>' + i.smaak + '</small></span></button>' +
+      h += '<div class="row"><button class="rowmain" data-act="herb" data-id="' + i.id + '">' + dot(i) +
+        '<span><b>' + i.n + '</b><small>' + i.smaak + (i.eigen ? ' Zelf toegevoegd.' : '') + '</small></span></button>' +
         '<label class="switch"><input type="checkbox" id="huis-' + i.id + '" data-change="pantry" data-id="' + i.id + '" aria-label="' + i.n + ' in huis"' +
         (S.pantry.indexOf(i.id) > -1 ? ' checked' : '') + '><span></span></label></div>';
     });
@@ -298,17 +328,115 @@
   function kastCount(can) {
     return S.pantry.length + ' van ' + ING.length + ' in huis. ' + (can ? 'Daarmee zet je nu ' + can + (can === 1 ? ' melange.' : ' melanges.') : 'Zet aan wat je hebt en zie bij Melanges wat je kunt zetten.');
   }
+  function tagsVan(list, inKast, cls) {
+    return list.map(function (o) {
+      return '<span class="tag' + (inKast.indexOf(o.id) > -1 ? ' ' + cls : '') + '">' + dot(o) + o.n + '</span>';
+    }).join('');
+  }
   function herbSheet(i) {
-    var p = partners(i.id), has = S.pantry.indexOf(i.id) > -1;
-    return '<div class="sheethead"><span class="bigdot" style="background:' + i.blad + '"></span><div><h2 class="title" id="sheet-title">' + i.n + '</h2>' +
-      '<p class="tags"><span>' + catLabel(i.c) + '</span><span>' + (has ? 'In huis' : 'Niet in huis') + '</span></p></div></div>' +
-      '<p>' + i.smaak + '</p><div class="panel">' + factsHTML(i.temp, i.tijd, i.caf) + '<p class="note">' + i.tip + '</p>' +
-      (i.letop && i.letop !== 'Bevat cafeïne.' ? '<p class="caution">' + i.letop + '</p>' : '') + '</div>' +
-      '<div class="group"><h3>Past bij</h3><div class="chips">' + p.map(function (o) {
-        return '<span class="tag"><span class="dot" style="background:' + o.blad + '"></span>' + o.n + '</span>';
-      }).join('') + '</div></div>' +
-      '<div class="actions"><button class="btn primary" data-act="open" data-ids="' + i.id + '">Begin een mix met ' + i.n.toLowerCase() + '</button>' +
-      '<button class="btn" data-act="pantry-toggle" data-id="' + i.id + '">' + (has ? 'Haal uit mijn kast' : 'Zet in mijn kast') + '</button></div>';
+    var has = S.pantry.indexOf(i.id) > -1;
+    var inKast = S.pantry.filter(function (id) { return id !== i.id; });
+    var eerstKast = function (x, y) { return (inKast.indexOf(y.id) > -1) - (inKast.indexOf(x.id) > -1); };
+    var goed = partners(i.id).sort(eerstKast);
+    var botst = ING.filter(function (o) { return o.id !== i.id && CLASH[key(i.id, o.id)]; }).sort(eerstKast);
+    var goedKast = goed.filter(function (o) { return inKast.indexOf(o.id) > -1; }).length;
+    var botstKast = botst.filter(function (o) { return inKast.indexOf(o.id) > -1; }).length;
+    var h = '<div class="sheethead">' + dot(i, 'bigdot') + '<div><h2 class="title" id="sheet-title">' + i.n + '</h2>' +
+      '<p class="tags"><span>' + catLabel(i.c) + '</span><span>' + (has ? 'In huis' : 'Niet in huis') + '</span>' + (i.eigen ? '<span>Zelf toegevoegd</span>' : '') + '</p></div></div>' +
+      '<p>' + i.smaak + '</p><div class="panel">' + factsHTML(i.temp, i.tijd, i.caf) + (i.tip ? '<p class="note">' + i.tip + '</p>' : '') +
+      (i.letop && i.letop !== 'Bevat cafeïne.' ? '<p class="caution">' + i.letop + '</p>' : '') + '</div>';
+    h += '<div class="group"><h3>Past bij</h3>';
+    if (inKast.length) {
+      h += '<p class="actions">' + pill(goedKast ? 'good' : 'plain', 'Past bij ' + goedKast + ' van de ' + inKast.length + ' in je kast') +
+        (botstKast ? pill('bad', 'Botst met ' + botstKast) : '') + '</p>';
+    }
+    h += (goed.length ? '<div class="chips">' + tagsVan(goed, inKast, 'have') + '</div>' : '<p class="empty">Nog geen bekende combinaties.</p>') +
+      (inKast.length && goed.length ? '<p class="note">Gekleurde rand: staat in je kast.</p>' : '') +
+      (i.eigen ? '<p class="note">Geschat op basis van het smaaktype dat je koos. Proef zelf of het klopt.</p>' : '') + '</div>';
+    if (botst.length) h += '<div class="group"><h3>Botst met</h3><div class="chips">' + tagsVan(botst, inKast, 'havebad') + '</div></div>';
+    h += '<div class="actions"><button class="btn primary" data-act="open" data-ids="' + i.id + '">Begin een mix met ' + i.n.toLowerCase() + '</button>' +
+      '<button class="btn" data-act="pantry-toggle" data-id="' + i.id + '">' + (has ? 'Haal uit mijn kast' : 'Zet in mijn kast') + '</button>' +
+      (i.eigen ? '<button class="btn" data-act="eigen-del" data-id="' + i.id + '">Verwijder dit ingrediënt</button>' : '') + '</div>';
+    return h;
+  }
+
+  // eigen ingredient toevoegen (bloem, kruid, fruit/specerij of thee)
+  var draft = { foto: '', kleur: '' };
+  function radios(name, opts, checked) {
+    return '<div class="chips">' + opts.map(function (o) {
+      return '<label class="rchip"><input type="radio" name="' + name + '" value="' + o[0] + '"' + (o[0] === checked ? ' checked' : '') + '><span>' + o[1] + '</span></label>';
+    }).join('') + '</div>';
+  }
+  function nieuwSheet() {
+    return '<h2 class="title" id="sheet-title">Eigen ingrediënt toevoegen</h2>' +
+      '<form class="form" data-form="nieuw" novalidate>' +
+      '<div class="fotorow"><span class="bigdot" id="nk-voorbeeld" style="background:' + KLEUREN[0] + '"></span>' +
+      '<div class="group"><label class="btn small" for="nk-foto">Kies een foto</label><input class="vh" type="file" id="nk-foto" accept="image/*">' +
+      '<span class="note">Of kies een kleur</span></div></div>' +
+      '<div class="chips">' + KLEUREN.map(function (k, n) {
+        return '<label class="kleur"><input type="radio" name="nk-kleur" value="' + k + '" aria-label="Kleur ' + (n + 1) + '"' + (n ? '' : ' checked') + '><span style="background:' + k + '"></span></label>';
+      }).join('') + '</div>' +
+      '<label class="fld" for="nk-naam"><span>Naam</span><input id="nk-naam" type="text" maxlength="30" autocomplete="off" placeholder="Bijvoorbeeld tijm of viooltjes"></label>' +
+      '<fieldset><legend>Wat is het?</legend>' + radios('nk-soort', [['bloem', 'Bloem'], ['kruid', 'Kruid'], ['fruit', 'Fruit of specerij'], ['basis', 'Thee']], 'kruid') + '</fieldset>' +
+      '<fieldset><legend>Hoe smaakt het?</legend>' + radios('nk-type', TYPES, 'zacht') + '</fieldset>' +
+      '<fieldset><legend>Hoe sterk is de smaak?</legend>' + radios('nk-sterkte', [['1', 'Zacht'], ['2', 'Gemiddeld'], ['3', 'Sterk']], '2') + '</fieldset>' +
+      '<div class="two"><label class="fld" for="nk-temp"><span>Water</span><select id="nk-temp"><option value="80">80 °C</option><option value="90">90 °C</option><option value="95" selected>95 °C</option><option value="100">100 °C</option></select></label>' +
+      '<label class="fld" for="nk-tijd"><span>Trekken</span><select id="nk-tijd"><option value="2-3">2–3 min</option><option value="3-5">3–5 min</option><option value="5-7" selected>5–7 min</option><option value="7-10">7–10 min</option></select></label></div>' +
+      '<label class="setrow" for="nk-caf"><span>Bevat cafeïne</span><span class="switch"><input type="checkbox" id="nk-caf"><span></span></span></label>' +
+      '<p class="hint" id="nk-fout" role="alert"></p>' +
+      '<button class="btn primary big" type="submit">Toevoegen en checken</button></form>';
+  }
+  function toonVoorbeeld() {
+    var el = document.getElementById('nk-voorbeeld'); if (!el) return;
+    var k = document.querySelector('input[name="nk-kleur"]:checked');
+    el.style.background = draft.foto ? 'url(' + draft.foto + ') center/cover' : (k ? k.value : KLEUREN[0]);
+  }
+  // foto verkleinen naar 96x96 zodat hij in de opslag past, en de gemiddelde kleur berekenen
+  function leesFoto(file) {
+    var fout = document.getElementById('nk-fout');
+    if (!file) return;
+    if (file.type.indexOf('image/') !== 0) { fout.textContent = 'Kies een afbeelding.'; return; }
+    var url = URL.createObjectURL(file), img = new Image();
+    img.onload = function () {
+      var c = document.createElement('canvas'), s = Math.min(img.width, img.height), ctx = c.getContext('2d');
+      c.width = c.height = 96;
+      ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, 96, 96);
+      ctx.drawImage(img, (img.width - s) / 2, (img.height - s) / 2, s, s, 0, 0, 96, 96);
+      var d = ctx.getImageData(0, 0, 96, 96).data, r = 0, g = 0, b = 0, n = 0;
+      for (var k = 0; k < d.length; k += 16) { r += d[k]; g += d[k + 1]; b += d[k + 2]; n++; }
+      var h = function (v) { var x = Math.round(v / n).toString(16); return x.length < 2 ? '0' + x : x; };
+      draft.foto = c.toDataURL('image/jpeg', 0.82); draft.kleur = '#' + h(r) + h(g) + h(b);
+      URL.revokeObjectURL(url); fout.textContent = ''; toonVoorbeeld();
+    };
+    img.onerror = function () { URL.revokeObjectURL(url); fout.textContent = 'Deze foto kon niet gelezen worden. Probeer een andere.'; };
+    img.src = url;
+  }
+  function bewaarEigen(form) {
+    var fout = document.getElementById('nk-fout'), val = function (name) { return form.querySelector('input[name="' + name + '"]:checked').value; };
+    var naam = cleanText(document.getElementById('nk-naam').value);
+    if (!naam) { fout.textContent = 'Geef je ingrediënt een naam.'; return; }
+    naam = naam.charAt(0).toUpperCase() + naam.slice(1);
+    if (ING.some(function (i) { return i.n.toLowerCase() === naam.toLowerCase(); })) { fout.textContent = 'Er staat al een ingrediënt met die naam in de lijst.'; return; }
+    if (S.eigen.length >= 30) { fout.textContent = 'Je hebt al 30 eigen ingrediënten. Verwijder er eerst eentje.'; return; }
+    var o = {
+      id: 'eigen-' + Date.now().toString(36), n: naam, c: val('nk-soort'), p: val('nk-type'), sterkte: Number(val('nk-sterkte')),
+      temp: Number(document.getElementById('nk-temp').value), tijd: document.getElementById('nk-tijd').value.split('-').map(Number),
+      caf: document.getElementById('nk-caf').checked, foto: draft.foto, blad: draft.foto ? draft.kleur : val('nk-kleur')
+    };
+    S.eigen.push(o); S.pantry.push(o.id);
+    if (!save()) {
+      S.eigen.pop(); S.pantry.pop();
+      fout.textContent = 'Opslaan lukte niet: de opslag van je toestel is vol.'; return;
+    }
+    voegToe(o); S.cat = 'alles'; save();
+    render(); openSheet('herb', o.id); toast(naam + ' toegevoegd');
+  }
+  function verwijderEigen(id) {
+    var zonder = function (list) { return list.filter(function (x) { return x !== id; }); };
+    S.eigen = S.eigen.filter(function (o) { return o.id !== id; });
+    S.sel = zonder(S.sel); S.pantry = zonder(S.pantry);
+    S.own = S.own.map(function (o) { o.ing = zonder(o.ing); return o; }).filter(function (o) { return o.ing.length; });
+    haalWeg(id); save(); closeSheet(); render(); toast('Ingrediënt verwijderd');
   }
 
   // mijn thee
@@ -335,7 +463,7 @@
   function openSheet(kind, id, from) {
     if (from) opener = from;
     sheetState = { kind: kind, id: id };
-    sheetBody.innerHTML = kind === 'rec' ? recSheet(recById(id)) : herbSheet(BY[id]);
+    sheetBody.innerHTML = kind === 'rec' ? recSheet(recById(id)) : kind === 'nieuw' ? nieuwSheet() : herbSheet(BY[id]);
     if (sheet.hidden) {
       sheet.hidden = false;
       document.documentElement.style.overflow = 'hidden';
@@ -395,6 +523,11 @@
     else if (act === 'cat') { S.cat = id; save(); renderKast(); }
     else if (act === 'rec' || act === 'herb') { openSheet(act, id, b); }
     else if (act === 'close') { closeSheet(); }
+    else if (act === 'nieuw') { draft = { foto: '', kleur: '' }; openSheet('nieuw', null, b); }
+    else if (act === 'eigen-del') {
+      if (!b.getAttribute('data-sure')) { b.setAttribute('data-sure', '1'); b.textContent = 'Zeker? Tik nog eens'; return; }
+      verwijderEigen(id);
+    }
     else if (act === 'msg-close') { hideMsg(); }
     else if (act === 'fav') {
       k = S.favs.indexOf(id); if (k > -1) S.favs.splice(k, 1); else S.favs.push(id);
@@ -422,7 +555,10 @@
     } else if (act === 'noinstall') { S.noInstall = true; save(); renderStart(); }
   });
   document.addEventListener('change', function (e) {
-    var t = e.target, kind = t.getAttribute && t.getAttribute('data-change'); if (!kind) return;
+    var t = e.target, kind = t.getAttribute && t.getAttribute('data-change');
+    if (t.id === 'nk-foto') { leesFoto(t.files && t.files[0]); return; }
+    if (t.name === 'nk-kleur') { draft.foto = ''; toonVoorbeeld(); return; }
+    if (!kind) return;
     if (kind === 'kan') { S.kan = t.checked; save(); renderMelanges(); var k = document.getElementById('kan'); if (k) k.focus(); }
     else if (kind === 'pantry') {
       togglePantry(t.getAttribute('data-id'), t.checked);
@@ -431,6 +567,7 @@
   });
   document.addEventListener('submit', function (e) {
     e.preventDefault();
+    if (e.target.getAttribute('data-form') === 'nieuw') { bewaarEigen(e.target); return; }
     if (e.target.getAttribute('data-form') !== 'save' || !S.sel.length) return;
     var input = document.getElementById('mix-naam');
     var name = input.value.trim() || listNames(S.sel);

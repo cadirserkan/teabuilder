@@ -37,6 +37,11 @@ function zet(ids) {
     return { temp: 95, tijd: [3, 4], caf: caf,
       note: 'Langer trekken maakt zwarte thee wrang. De bloemen en kruiden geven in die tijd genoeg smaak af.' };
   }
+  var teer = ids.filter(function (id) { return BY[id].eigen && BY[id].temp < 90; })[0];
+  if (teer) {
+    return { temp: BY[teer].temp, tijd: BY[teer].tijd, caf: caf,
+      note: BY[teer].n + ' kan niet tegen kokend water. Laat het water eerst even afkoelen.' };
+  }
   var lo = 0, hi = 0;
   ids.forEach(function (id) { lo = Math.max(lo, BY[id].tijd[0]); hi = Math.max(hi, BY[id].tijd[1]); });
   if (has('salie')) { lo = 3; hi = 5; }
@@ -77,4 +82,44 @@ function fit(id, sel) {
   if (c) return 'botst';
   if (BY[id].c === 'basis' && sel.some(function (s) { return BY[s].c === 'basis'; })) return '';
   return g >= Math.ceil(sel.length / 2) ? 'past' : '';
+}
+
+// ---- eigen kruiden ----
+var TG = {}, TB = {};
+TYPE_GOED.forEach(function (t) { TG[key(t[0], t[1])] = true; });
+TYPE_BOTST.forEach(function (t) { TB[key(t[0], t[1])] = t[2]; });
+function typeVan(i) { return i.p || TYPE[i.id] || 'zacht'; }
+
+// theekleur afleiden van de kleur van het kruid
+function tint(hex) {
+  var a = hexToRgb(hex), b = hexToRgb('#e9d992');
+  function h(k) { var s = Math.round(a[k] * 0.35 + b[k] * 0.65).toString(16); return s.length < 2 ? '0' + s : s; }
+  return '#' + h(0) + h(1) + h(2);
+}
+// van wat de gebruiker invult een volledig ingredient maken
+function maakEigen(o) {
+  var basis = o.c === 'basis';
+  var label = TYPES.filter(function (t) { return t[0] === o.p; })[0];
+  return {
+    id: o.id, n: o.n, c: o.c, p: basis ? 'thee' : o.p, eigen: true, foto: o.foto || '',
+    deel: basis ? 3 : o.sterkte === 1 ? 2 : o.sterkte === 2 ? 1 : 0.5, kracht: o.sterkte, kk: 1,
+    inf: tint(o.blad), blad: o.blad, temp: o.temp, tijd: o.tijd, caf: !!o.caf,
+    smaak: basis ? 'Eigen thee.' : (label ? label[1] : 'Eigen kruid') + '.', tip: ''
+  };
+}
+// checken met welke andere ingredienten het past of botst
+function koppel(nieuw) {
+  ING.forEach(function (o) {
+    if (o.id === nieuw.id) return;
+    var t = key(typeVan(nieuw), typeVan(o)), k = key(nieuw.id, o.id);
+    if (TB[t]) CLASH[k] = TB[t]; else if (TG[t]) GOOD[k] = true;
+  });
+}
+function voegToe(o) { var i = maakEigen(o); ING.push(i); BY[i.id] = i; koppel(i); return i; }
+function haalWeg(id) {
+  ING = ING.filter(function (i) { return i.id !== id; });
+  delete BY[id];
+  Object.keys(GOOD).concat(Object.keys(CLASH)).forEach(function (k) {
+    if (k.split('|').indexOf(id) > -1) { delete GOOD[k]; delete CLASH[k]; }
+  });
 }
